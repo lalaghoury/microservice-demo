@@ -3,13 +3,15 @@ package main
 import (
 	pbOrder "api-gateway/order"
 	pbProduct "api-gateway/product"
+	"log"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/juju/ratelimit"
 	"google.golang.org/grpc"
-	"log"
-	"net/http"
-	"time"
 )
 
 // Secret key used to sign the JWT tokens
@@ -47,23 +49,41 @@ func GenerateJWT() (string, error) {
 func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get the token from the Authorization header
-		tokenString := c.GetHeader("Authorization")
+		authHeader := c.GetHeader("Authorization")
 
-		if tokenString == "" {
+		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
 			c.Abort()
 			return
 		}
 
+		// The Authorization header should start with "Bearer "
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header format must be Bearer {token}"})
+			c.Abort()
+			return
+		}
+
+		// Remove "Bearer " prefix to get the actual token
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
 		// Parse and validate the token
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			// Validate the signing method to ensure it's HMAC
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.NewValidationError("unexpected signing method", jwt.ValidationErrorSignatureInvalid)
 			}
 			return jwtSecret, nil
 		})
 
-		if err != nil || !token.Valid {
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		// Check if token is valid
+		if !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
@@ -75,7 +95,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 }
 
 func connectToProductService() pbProduct.ProductServiceClient {
-	conn, err := grpc.Dial("0.0.0.0:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial("product-service:50051", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Failed to connect to Product service: %v", err)
 	}
@@ -104,7 +124,7 @@ func main() {
 	})
 
 	// Apply JWTAuthMiddleware globally for all routes except the /token endpoint
-	r.Use(JWTAuthMiddleware())
+	// r.Use(JWTAuthMiddleware())
 
 	productClient := connectToProductService()
 	orderClient := connectToOrderService()
