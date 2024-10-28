@@ -1,0 +1,17 @@
+{
+  "name": "proto-definitions",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "generate": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=../product-service/src/proto --ts_proto_out=../order-service/src/proto --proto_path=./ ./product.proto"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "protoc-gen-ts": "^0.8.7",
+    "ts-proto": "^2.2.5"
+  }
+}

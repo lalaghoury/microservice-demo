@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package product;
+
+service ProductService {
+  rpc FindOne(FindOneRequest) returns (FindOneResponse);
+  rpc DecreaseQuantity(DecreaseQuantityRequest) returns (DecreaseQuantityResponse);
+}
+
+message FindOneRequest {
+  int32 id = 1;
+}
+
+message FindOneResponse {
+  Product product = 1;
+}
+
+message DecreaseQuantityRequest {
+  int32 id = 1;
+  int32 quantity = 2;
+}
+
+message DecreaseQuantityResponse {
+  bool success = 1;
+}
+
+message Product {
+  int32 id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  int32 availableQuantity = 5;
+}
