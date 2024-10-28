@@ -1,8 +1,8 @@
 // order-service/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { join } from 'path';
+// import { ClientsModule, Transport } from '@nestjs/microservices';
+// import { join } from 'path';
 import { OrderModule } from './order/order.module';
 import { Order } from './order/order.entity';
 
@@ -10,11 +10,11 @@ import { Order } from './order/order.entity';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: '1',
-      database: 'orderdb',
+      host: process.env.HOST ?? 'order-db',
+      port: parseInt(process.env.POSTGRES_PORT, 10) ?? 5436,
+      username: process.env.POSTGRES_USER ?? 'postgres',
+      password: process.env.POSTGRES_PASSWORD ?? '1',
+      database: process.env.POSTGRES_DB ?? 'orderdb',
       entities: [Order],
       synchronize: true,
     }),
@@ -32,4 +32,4 @@ import { Order } from './order/order.entity';
     // ]),
   ],
 })
-export class AppModule { }
+export class AppModule {}

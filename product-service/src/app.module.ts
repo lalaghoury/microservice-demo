@@ -5,17 +5,20 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product } from './product/product.entity';
 import { ProductModule } from './product/product.module';
 @Module({
-  imports: [TypeOrmModule.forRoot({
-    type: 'postgres',
-    host: 'localhost',
-    port: 5432,
-    username: 'postgres',
-    password: '1',
-    database: 'productdb',
-    entities: [Product],
-    synchronize: true,
-  }), ProductModule],
+  imports: [
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.HOST ?? 'product-db',
+      port: parseInt(process.env.POSTGRES_PORT, 10) || 5432,
+      username: process.env.POSTGRES_USER ?? 'postgres',
+      password: process.env.POSTGRES_PASSWORD ?? '1',
+      database: process.env.POSTGRES_DB ?? 'productdb',
+      entities: [Product],
+      synchronize: true,
+    }),
+    ProductModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
