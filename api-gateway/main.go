@@ -1,10 +1,12 @@
 package main
 
+// We can add any package using the go add command and the package name or we can install all the dependencies using the go install command.
 import (
-	pbOrder "api-gateway/order"
-	pbProduct "api-gateway/product"
+	pbOrder "api-gateway/order"     // this is made by me but it is not in the order service (no proto made).
+	pbProduct "api-gateway/product" // the path to the proto file of product service
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,11 +16,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Secret key used to sign the JWT tokens
+// Secret key used to sign the JWT tokens, Itmay come from docker compose env.
 var jwtSecret = []byte("nopadox190@altpano.com")
 
-var rateLimiter = ratelimit.NewBucketWithRate(1, 5) // 1 request per second, 5 burst
+var rateLimiter = ratelimit.NewBucketWithRate(1, 5) // 1 request per second, 5 burst // rate limit func mentioned in the requirements
 
+// actual middleware for rate limiting
 func RateLimitMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if rateLimiter.TakeAvailable(1) == 0 {
@@ -125,23 +128,29 @@ func main() {
 
 	// Apply JWTAuthMiddleware globally for all routes except the /token endpoint
 	// r.Use(JWTAuthMiddleware())
+	r.Use(RateLimitMiddleware()) // Apply rate limiting middleware globally
 
-	productClient := connectToProductService()
+	productClient := connectToProductService() // Connect to the Product service
 	orderClient := connectToOrderService()
 
 	// Protected route to get a product by ID
 	r.GET("/products/:id", func(c *gin.Context) {
-		id := c.Param("id")
-		req := &pbProduct.GetProductRequest{Id: id}
-		res, err := productClient.GetProduct(c, req)
+		id := c.Param("id") // Get the product ID from the URL
+		idInt, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"}) // Return an error if the ID is not a number
 			return
 		}
-		c.JSON(200, res)
+		req := &pbProduct.FindOneRequest{Id: int32(idInt)} // Create a FindOneRequest with the product ID
+		res, err := productClient.FindOne(c, req)          // Call the FindOne method on the Product service
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()}) // Return an error if the request fails
+			return
+		}
+		c.JSON(200, res) // Return the product as JSON
 	})
 
-	// Protected route to create a new order
+	// Protected route to create a new order TODO: this is not implemented by me (no proto made)
 	r.POST("/orders", func(c *gin.Context) {
 		var order pbOrder.Order
 		if err := c.ShouldBindJSON(&order); err != nil {

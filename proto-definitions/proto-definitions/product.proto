@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package product;
 
+option go_package = "proto/product";
+
 service ProductService {
   rpc FindOne(FindOneRequest) returns (FindOneResponse);
   rpc DecreaseQuantity(DecreaseQuantityRequest) returns (DecreaseQuantityResponse);
